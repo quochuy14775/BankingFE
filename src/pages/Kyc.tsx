@@ -83,6 +83,61 @@ export default function Kyc() {
   const [backId, setBackId] = useState<string | null>(null);
   const [selfie, setSelfie] = useState<string | null>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraReady(false);
+  }
+
+  useEffect(() => {
+    if (step !== "selfie" || selfie) return;
+    let cancelled = false;
+    setCameraError(false);
+    navigator.mediaDevices
+      ?.getUserMedia({ video: { facingMode: "user" } })
+      .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        setCameraReady(true);
+      })
+      .catch(() => setCameraError(true));
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
+  }, [step, selfie]);
+
+  function handleCapture() {
+    const video = videoRef.current;
+    if (!video) return;
+    setCapturing(true);
+    setTimeout(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.translate(canvas.width, 0);
+      ctx?.scale(-1, 1);
+      ctx?.drawImage(video, 0, 0);
+      setSelfie(canvas.toDataURL("image/jpeg"));
+      stopCamera();
+      setCapturing(false);
+    }, 900);
+  }
+
+  function handleRetake() {
+    setSelfie(null);
+  }
 
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedIdInfo | null>(null);
@@ -191,7 +246,7 @@ export default function Kyc() {
               <p className="text-[11px] text-slate-500">
                 Chụp rõ CCCD gắn chip hai mặt — hệ thống sẽ tự động đọc dữ liệu từ chip để điền thông tin.
               </p>
-              <div className="grid grid-cols-2 gap-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px]">
                 <div>
                   <DocumentDropzone label="Mặt trước (có chip)" preview={frontId} onChange={handleFrontIdChange} />
                   {extracting && (
@@ -278,20 +333,74 @@ export default function Kyc() {
           {step === "selfie" && (
             <div className="space-y-[12px] text-center">
               <h2 className="text-[14px] font-semibold text-slate-900 tracking-tight">Xác thực khuôn mặt</h2>
-              <p className="text-[11px] text-slate-500">Chụp ảnh chân dung rõ mặt, đủ sáng, không đeo khẩu trang.</p>
+              <p className="text-[11px] text-slate-500">
+                {selfie
+                  ? "Ảnh chân dung đã được ghi nhận."
+                  : "Đưa khuôn mặt vào khung hình, đủ sáng, không đeo khẩu trang."}
+              </p>
 
-              <button
-                type="button"
-                onClick={() => selfieInputRef.current?.click()}
-                className="relative mx-auto w-[135px] h-[135px] rounded-full border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50 hover:border-slate-300 transition-colors"
-              >
+              <div className="relative mx-auto w-[135px] h-[135px] rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
                 {selfie ? (
                   <img src={selfie} alt="Ảnh chân dung" className="absolute inset-0 w-full h-full object-cover" />
+                ) : cameraError ? (
+                  <button
+                    type="button"
+                    onClick={() => selfieInputRef.current?.click()}
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-[6px] bg-slate-50 hover:bg-slate-100 transition-colors"
+                  >
+                    <Camera size={20} className="text-slate-400" />
+                    <span className="text-[9px] text-slate-400 font-medium px-[9px]">Không mở được camera, tải ảnh lên</span>
+                  </button>
                 ) : (
-                  <Camera size={24} className="text-slate-400" />
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover -scale-x-100"
+                    />
+                    {cameraReady && (
+                      <div className="absolute inset-0 rounded-full ring-2 ring-fuchsia-400/70 pointer-events-none overflow-hidden">
+                        <div className="absolute left-0 right-0 h-[2px] bg-fuchsia-400 shadow-[0_0_8px_rgba(192,38,211,0.8)] animate-face-scan" />
+                      </div>
+                    )}
+                    {!cameraReady && (
+                      <span className="text-[9px] text-white/60 font-medium">Đang mở camera...</span>
+                    )}
+                  </>
                 )}
-              </button>
+                {capturing && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                    <ScanLine size={22} className="text-fuchsia-600 animate-pulse" />
+                  </div>
+                )}
+              </div>
               <input ref={selfieInputRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handleSelfieFile} />
+
+              {!selfie && !cameraError && (
+                <button
+                  type="button"
+                  disabled={!cameraReady || capturing}
+                  onClick={handleCapture}
+                  className="mx-auto flex items-center gap-[6px] px-[15px] py-[9px] rounded-2xl text-[12px] font-medium text-white transition-transform enabled:hover:scale-[1.02] disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #818cf8, #c026d3)" }}
+                >
+                  <Camera size={14} />
+                  {capturing ? "Đang quét..." : "Quét khuôn mặt"}
+                </button>
+              )}
+
+              {selfie && (
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="mx-auto flex items-center gap-[6px] text-[11px] font-medium text-slate-500 hover:text-slate-900"
+                >
+                  <RotateCcw size={12} />
+                  Quét lại
+                </button>
+              )}
 
               <div className="flex gap-[9px] pt-[3px] max-w-[300px] mx-auto">
                 <button

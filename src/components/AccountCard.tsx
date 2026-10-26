@@ -10,7 +10,6 @@ interface AccountCardProps {
   interestRate?: number;
   maturityDate?: string;
   cardExpiry?: string;
-  delayMs?: number;
 }
 
 function inferType(label: string): "checking" | "savings" {
@@ -46,7 +45,6 @@ export default function AccountCard({
   interestRate,
   maturityDate,
   cardExpiry = "12/28",
-  delayMs = 0,
 }: AccountCardProps) {
   const type = inferType(label);
   const theme = THEME[type];
@@ -55,11 +53,10 @@ export default function AccountCard({
 
   return (
     <div
-      className="group relative rounded-3xl p-[15px] overflow-hidden text-white min-h-[165px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5 animate-step-in"
+      className="group relative rounded-3xl p-[15px] overflow-hidden text-white min-h-[165px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5"
       style={{
         background: theme.background,
         boxShadow: "0 20px 40px -16px rgba(15,23,42,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
-        animationDelay: `${delayMs}ms`,
       }}
     >
       {/* border ring */}
@@ -158,10 +155,7 @@ export default function AccountCard({
 
       {/* traveling dot along the bottom edge — always on at low opacity, brightens on hover */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 overflow-hidden opacity-40 group-hover:opacity-100 transition-opacity">
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-travel-dot"
-          style={{ animationDelay: `${delayMs}ms` }}
-        />
+        <div className="absolute top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-travel-dot" />
       </div>
     </div>
   );

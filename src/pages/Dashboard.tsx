@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowDownLeft, ArrowUpRight, ArrowRight, Receipt, Target } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ArrowRight, Receipt, ArrowLeftRight, QrCode, Smartphone, Coins } from "lucide-react";
 import BankCard from "../components/BankCard.tsx";
 import AccountCard from "../components/AccountCard.tsx";
 import SpendingChart from "../components/SpendingChart.tsx";
 import FinancialScoreCard from "../components/FinancialScoreCard.tsx";
+import GoalProgress from "../components/GoalProgress.tsx";
 import {
   mockAccounts,
   mockContacts,
@@ -11,25 +12,20 @@ import {
   mockUser,
   mockSpendingTrend,
   mockBills,
-  mockGoals,
   formatVND,
 } from "../lib/mockData.ts";
+import { useGoals } from "../lib/goalStore.tsx";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { goals } = useGoals();
   const totalBalance = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
   const recent = mockTransactions.slice(0, 5);
   const monthOut = mockTransactions.filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
   const monthIn = mockTransactions.filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
 
-  function payBill(bill: (typeof mockBills)[number]) {
-    navigate("/transfer", {
-      state: {
-        contact: { id: `bill-${bill.id}`, name: bill.name, bank: "Nhà cung cấp dịch vụ", number: "—" },
-        amount: bill.amount,
-        note: `Thanh toán ${bill.name}`,
-      },
-    });
+  function payBill() {
+    navigate("/bills");
   }
 
   return (
@@ -41,15 +37,35 @@ export default function Dashboard() {
         style={{ animationDelay: "3s" }}
       />
 
+      <div className="grid grid-cols-4 sm:grid-cols-4 gap-[8px] mb-[12px]">
+        {[
+          { to: "/transfer", label: "Chuyển khoản", icon: ArrowLeftRight },
+          { to: "/qr-pay", label: "QR Pay", icon: QrCode },
+          { to: "/topup", label: "Nạp điện thoại", icon: Smartphone },
+          { to: "/exchange", label: "Tỷ giá", icon: Coins },
+        ].map(({ to, label, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="group flex flex-col items-center gap-[6px] bg-white rounded-3xl border border-black/5 py-[14px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-shadow"
+          >
+            <span className="w-[32px] h-[32px] rounded-full bg-slate-100 text-slate-700 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-hover:bg-slate-900 group-hover:text-white">
+              <Icon size={14} />
+            </span>
+            <span className="text-[10px] font-medium text-slate-600 text-center px-[4px]">{label}</span>
+          </Link>
+        ))}
+      </div>
+
       <div className="grid grid-cols-12 gap-[12px]">
         {/* Main column */}
         <div className="col-span-12 xl:col-span-8 space-y-[12px]">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-[12px]">
-            <div className="sm:col-span-1 animate-step-in">
+            <div className="sm:col-span-1">
               <BankCard number={mockUser.accountNumber} balance={totalBalance} />
             </div>
 
-            {mockAccounts.map((acc, i) => (
+            {mockAccounts.map((acc) => (
               <AccountCard
                 key={acc.id}
                 label={acc.label}
@@ -59,7 +75,6 @@ export default function Dashboard() {
                 interestRate={acc.interestRate}
                 maturityDate={acc.maturityDate}
                 cardExpiry={mockUser.cardExpiry}
-                delayMs={(i + 1) * 80}
               />
             ))}
           </div>
@@ -81,11 +96,10 @@ export default function Dashboard() {
             </div>
 
             <ul className="divide-y divide-slate-100">
-              {recent.map((tx, i) => (
+              {recent.map((tx) => (
                 <li
                   key={tx.id}
-                  className="group flex items-center justify-between py-[10px] animate-step-in hover:bg-slate-50/70 -mx-2 px-[6px] rounded-xl transition-colors"
-                  style={{ animationDelay: `${i * 70}ms` }}
+                  className="group flex items-center justify-between py-[10px] hover:bg-slate-50/70 -mx-2 px-[6px] rounded-xl transition-colors"
                 >
                   <div className="flex items-center gap-[10px]">
                     <div
@@ -135,17 +149,13 @@ export default function Dashboard() {
           <div className="bg-white rounded-3xl border border-black/5 p-[15px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-[12px]">
               <h2 className="text-[13px] font-semibold text-slate-900 tracking-tight">Hóa đơn sắp đến hạn</h2>
-              <Link to="/transfer" className="text-[10px] text-slate-500 font-medium hover:text-slate-900">
+              <Link to="/bills" className="text-[10px] text-slate-500 font-medium hover:text-slate-900">
                 Xem tất cả
               </Link>
             </div>
             <ul className="space-y-[10px]">
-              {mockBills.map((bill, i) => (
-                <li
-                  key={bill.id}
-                  className="group flex items-center gap-[9px] animate-step-in"
-                  style={{ animationDelay: `${i * 70}ms` }}
-                >
+              {mockBills.map((bill) => (
+                <li key={bill.id} className="group flex items-center gap-[9px]">
                   <span className="w-[24px] h-[24px] rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-6">
                     <Receipt size={10} />
                   </span>
@@ -156,7 +166,7 @@ export default function Dashboard() {
                   <div className="flex flex-col items-end gap-[4px] shrink-0">
                     <p className="text-[11px] font-semibold text-slate-900">{formatVND(bill.amount)}</p>
                     <button
-                      onClick={() => payBill(bill)}
+                      onClick={() => payBill()}
                       className="px-[8px] py-[3px] rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-medium transition-colors"
                     >
                       Trả tiền
@@ -170,38 +180,14 @@ export default function Dashboard() {
           <div className="bg-white rounded-3xl border border-black/5 p-[15px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-[12px]">
               <h2 className="text-[13px] font-semibold text-slate-900 tracking-tight">Mục tiêu tài chính</h2>
-              <Target size={11} className="text-slate-400" />
+              <Link to="/goals" className="text-[10px] text-slate-500 font-medium hover:text-slate-900">
+                Xem tất cả
+              </Link>
             </div>
             <div className="space-y-[12px]">
-              {mockGoals.map((goal, i) => {
-                const pct = Math.min((goal.current / goal.target) * 100, 100);
-                return (
-                  <div key={goal.id} className="animate-step-in" style={{ animationDelay: `${i * 90}ms` }}>
-                    <div className="flex items-center justify-between text-[11px] mb-[6px]">
-                      <span className="font-medium text-slate-700">{goal.name}</span>
-                      <span className="text-slate-400">{Math.round(pct)}%</span>
-                    </div>
-                    <div className="relative h-[6px] rounded-full bg-slate-100 overflow-visible">
-                      <div className="h-full rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-slate-900 transition-all duration-700 ease-out"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-700 ease-out"
-                        style={{ left: `${pct}%` }}
-                      >
-                        <span className="absolute inset-0 w-[9px] h-[9px] rounded-full bg-slate-900/40 animate-ping" />
-                        <span className="relative block w-[9px] h-[9px] rounded-full bg-slate-900 shadow-[0_0_6px_rgba(15,23,42,0.5)] ring-2 ring-white" />
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-[4px]">
-                      {formatVND(goal.current)} / {formatVND(goal.target)}
-                    </p>
-                  </div>
-                );
-              })}
+              {goals.map((goal) => (
+                <GoalProgress key={goal.id} name={goal.name} current={goal.current} target={goal.target} />
+              ))}
             </div>
           </div>
 

@@ -2,26 +2,130 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
-  ArrowDownLeft,
-  ArrowUpRight,
   LayoutDashboard,
   ArrowLeftRight,
   History,
+  PiggyBank,
+  Receipt,
+  Target,
+  CreditCard,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  Repeat,
+  Plus,
+  KeyRound,
+  Lock,
+  Users,
+  Filter,
+  Wallet,
+  QrCode,
+  ScanLine,
+  Smartphone,
+  ArrowLeftRight as ExchangeIcon,
   type LucideIcon,
 } from "lucide-react";
-import { mockContacts, mockTransactions, formatVND, type Contact, type Transaction } from "../lib/mockData.ts";
+
+interface NavFeature {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  pageLabel: string;
+}
 
 interface NavPage {
   to: string;
   label: string;
   icon: LucideIcon;
+  features: NavFeature[];
 }
 
 const pages: NavPage[] = [
-  { to: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { to: "/transfer", label: "Chuyển khoản", icon: ArrowLeftRight },
-  { to: "/history", label: "Lịch sử giao dịch", icon: History },
+  {
+    to: "/dashboard",
+    label: "Tổng quan",
+    icon: LayoutDashboard,
+    features: [],
+  },
+  {
+    to: "/transfer",
+    label: "Chuyển khoản",
+    icon: ArrowLeftRight,
+    features: [{ to: "/transfer", label: "Chuyển khoản tới người nhận", icon: Users, pageLabel: "Chuyển khoản" }],
+  },
+  {
+    to: "/qr-pay",
+    label: "QR Pay",
+    icon: QrCode,
+    features: [
+      { to: "/qr-pay", label: "Quét mã QR để thanh toán", icon: ScanLine, pageLabel: "QR Pay" },
+      { to: "/qr-pay", label: "Tạo mã QR nhận tiền", icon: QrCode, pageLabel: "QR Pay" },
+    ],
+  },
+  {
+    to: "/topup",
+    label: "Nạp tiền điện thoại",
+    icon: Smartphone,
+    features: [{ to: "/topup", label: "Nạp thẻ điện thoại", icon: Smartphone, pageLabel: "Nạp tiền điện thoại" }],
+  },
+  {
+    to: "/exchange",
+    label: "Tỷ giá ngoại tệ",
+    icon: ExchangeIcon,
+    features: [{ to: "/exchange", label: "Quy đổi ngoại tệ", icon: ExchangeIcon, pageLabel: "Tỷ giá ngoại tệ" }],
+  },
+  {
+    to: "/history",
+    label: "Lịch sử giao dịch",
+    icon: History,
+    features: [{ to: "/history", label: "Lọc giao dịch", icon: Filter, pageLabel: "Lịch sử giao dịch" }],
+  },
+  {
+    to: "/budget",
+    label: "Quản lý chi tiêu",
+    icon: PiggyBank,
+    features: [{ to: "/budget", label: "Thêm khoản chi tiêu", icon: Plus, pageLabel: "Quản lý chi tiêu" }],
+  },
+  {
+    to: "/bills",
+    label: "Hóa đơn",
+    icon: Receipt,
+    features: [
+      { to: "/bills", label: "Thêm nhà cung cấp dịch vụ", icon: Plus, pageLabel: "Hóa đơn" },
+      { to: "/bills", label: "Thanh toán hóa đơn", icon: Wallet, pageLabel: "Hóa đơn" },
+      { to: "/bills", label: "Bật tự động thanh toán", icon: Repeat, pageLabel: "Hóa đơn" },
+    ],
+  },
+  {
+    to: "/goals",
+    label: "Mục tiêu",
+    icon: Target,
+    features: [{ to: "/goals", label: "Thêm mục tiêu tiết kiệm", icon: Plus, pageLabel: "Mục tiêu" }],
+  },
+  {
+    to: "/cards",
+    label: "Thẻ",
+    icon: CreditCard,
+    features: [
+      { to: "/cards", label: "Khóa / mở thẻ", icon: Lock, pageLabel: "Thẻ" },
+      { to: "/cards", label: "Đổi mã PIN", icon: KeyRound, pageLabel: "Thẻ" },
+      { to: "/cards", label: "Cấp thẻ phụ", icon: Users, pageLabel: "Thẻ" },
+    ],
+  },
+  {
+    to: "/settings",
+    label: "Cài đặt",
+    icon: SettingsIcon,
+    features: [{ to: "/settings", label: "Cập nhật thông tin cá nhân", icon: SettingsIcon, pageLabel: "Cài đặt" }],
+  },
+  {
+    to: "/kyc",
+    label: "Định danh điện tử",
+    icon: ShieldCheck,
+    features: [{ to: "/kyc", label: "Xác thực định danh eKYC", icon: ShieldCheck, pageLabel: "Định danh điện tử" }],
+  },
 ];
+
+const allFeatures: NavFeature[] = pages.flatMap((p) => p.features);
 
 export default function NavSearch() {
   const navigate = useNavigate();
@@ -45,15 +149,11 @@ export default function NavSearch() {
 
   const matchedPages: NavPage[] = q ? pages.filter((p) => p.label.toLowerCase().includes(q)) : pages;
 
-  const matchedContacts: Contact[] = q
-    ? mockContacts.filter((c) => c.name.toLowerCase().includes(q) || c.bank.toLowerCase().includes(q))
-    : mockContacts.slice(0, 3);
+  const matchedFeatures: NavFeature[] = q
+    ? allFeatures.filter((f) => f.label.toLowerCase().includes(q) || f.pageLabel.toLowerCase().includes(q))
+    : [];
 
-  const matchedTransactions: Transaction[] = q
-    ? mockTransactions.filter((t) => t.desc.toLowerCase().includes(q))
-    : mockTransactions.slice(0, 3);
-
-  const hasResults = matchedPages.length + matchedContacts.length + matchedTransactions.length > 0;
+  const hasResults = matchedPages.length + matchedFeatures.length > 0;
 
   useLayoutEffect(() => {
     if (open && contentRef.current) {
@@ -84,7 +184,7 @@ export default function NavSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
-          placeholder="Tìm kiếm giao dịch, tính năng..."
+          placeholder="Tìm kiếm trang, tính năng..."
           className="w-full pl-[27px] pr-[36px] py-[4px] rounded-full bg-transparent border-0 text-[11px] text-slate-700 placeholder:text-slate-400 focus:outline-none"
         />
         <kbd
@@ -130,56 +230,23 @@ export default function NavSearch() {
             </div>
           )}
 
-          {matchedContacts.length > 0 && (
-            <div className="mb-[3px]">
-              <p className="px-[9px] pt-[6px] pb-[3px] text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Người nhận
-              </p>
-              {matchedContacts.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => go("/transfer")}
-                  className="w-full flex items-center gap-[9px] px-[9px] py-[6px] rounded-xl text-left hover:bg-slate-50 transition-colors"
-                >
-                  <span className="w-[24px] h-[24px] rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-600">
-                    {c.name.split(" ").pop()?.[0]}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-slate-900 truncate">{c.name}</p>
-                    <p className="text-[10px] text-slate-400">{c.bank}</p>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {matchedTransactions.length > 0 && (
+          {matchedFeatures.length > 0 && (
             <div>
               <p className="px-[9px] pt-[6px] pb-[3px] text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Giao dịch
+                Tính năng
               </p>
-              {matchedTransactions.map((tx) => (
+              {matchedFeatures.map((f, i) => (
                 <button
-                  key={tx.id}
-                  onClick={() => go("/history")}
+                  key={`${f.to}-${i}`}
+                  onClick={() => go(f.to)}
                   className="w-full flex items-center gap-[9px] px-[9px] py-[6px] rounded-xl text-left hover:bg-slate-50 transition-colors"
                 >
-                  <span
-                    className={`w-[24px] h-[24px] rounded-full flex items-center justify-center ${
-                      tx.type === "in" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {tx.type === "in" ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                  <span className="w-[24px] h-[24px] rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                    <f.icon size={11} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-slate-900 truncate">{tx.desc}</p>
-                    <p className="text-[10px] text-slate-400">{tx.date}</p>
-                  </span>
-                  <span
-                    className={`text-[11px] font-semibold ${tx.type === "in" ? "text-emerald-600" : "text-slate-900"}`}
-                  >
-                    {tx.type === "in" ? "+" : "-"}
-                    {formatVND(tx.amount)}
+                    <p className="text-[11px] font-medium text-slate-900 truncate">{f.label}</p>
+                    <p className="text-[10px] text-slate-400">{f.pageLabel}</p>
                   </span>
                 </button>
               ))}

@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
-import { ArrowLeftRight, CheckCircle2, Check, ShieldCheck, Lock, Clock, Zap } from "lucide-react";
+import { ArrowLeftRight, CheckCircle2, Check, ShieldCheck, Lock, Clock, Zap, Tag } from "lucide-react";
 import { mockAccounts, mockContacts, formatVND, resolveAccountName, type Contact } from "../lib/mockData.ts";
+import { useBudget } from "../lib/budgetStore.tsx";
+import { categoryColor, categoryIcon } from "../lib/categoryVisuals.ts";
 import OtpInput from "../components/OtpInput.tsx";
 import TransferTimeline from "../components/TransferTimeline.tsx";
 import TransferRouteVisual from "../components/TransferRouteVisual.tsx";
@@ -21,6 +23,7 @@ interface TransferNavState {
 export default function Transfer() {
   const location = useLocation();
   const navState = (location.state as TransferNavState | null) ?? null;
+  const { categories, addTransaction } = useBudget();
 
   const [step, setStep] = useState<Step>("form");
   const [fromAccountId, setFromAccountId] = useState(mockAccounts[0].id);
@@ -31,6 +34,7 @@ export default function Transfer() {
   const [manualNumber, setManualNumber] = useState("");
   const [amount, setAmount] = useState(navState?.amount ? String(navState.amount) : "");
   const [note, setNote] = useState(navState?.note ?? "");
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [error, setError] = useState("");
 
   const resolvedName = resolveAccountName(manualNumber);
@@ -90,6 +94,15 @@ export default function Transfer() {
       return;
     }
     setOtpError("");
+    if (selectedContact) {
+      addTransaction({
+        date: new Date().toISOString().slice(0, 10),
+        type: "out",
+        desc: `Chuyển khoản - ${selectedContact.name}`,
+        amount: amountNumber,
+        categoryId,
+      });
+    }
     setStep("success");
   }
 
@@ -104,6 +117,7 @@ export default function Transfer() {
     setSelectedContact(null);
     setAmount("");
     setNote("");
+    setCategoryId(undefined);
     setOtp("");
     setOtpError("");
     setStep("form");
@@ -299,6 +313,44 @@ export default function Transfer() {
               />
             </div>
 
+            <div>
+              <label className="flex items-center gap-[5px] text-[11px] font-medium text-slate-500 mb-[6px]">
+                <Tag size={10} />
+                Phân loại chi tiêu (tùy chọn)
+              </label>
+              <div className="flex flex-wrap gap-[6px]">
+                <button
+                  type="button"
+                  onClick={() => setCategoryId(undefined)}
+                  className={`px-[10px] py-[6px] rounded-full text-[11px] font-medium transition-all ${
+                    !categoryId
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                  }`}
+                >
+                  Không phân loại
+                </button>
+                {categories.map((cat) => {
+                  const color = categoryColor(cat.color);
+                  const Icon = categoryIcon(cat.icon);
+                  const active = categoryId === cat.id;
+                  return (
+                    <button
+                      type="button"
+                      key={cat.id}
+                      onClick={() => setCategoryId(cat.id)}
+                      className={`flex items-center gap-[5px] px-[10px] py-[6px] rounded-full text-[11px] font-medium transition-all ${
+                        active ? `${color.bg} ${color.text} ring-1 ${color.ring}` : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                      }`}
+                    >
+                      <Icon size={11} />
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {error && <p className="text-[11px] text-red-500 font-medium">{error}</p>}
 
             <button
@@ -321,6 +373,10 @@ export default function Transfer() {
               <Row label="Số tài khoản" value={selectedContact.number} />
               <Row label="Số tiền" value={formatVND(amountNumber)} highlight />
               {note && <Row label="Lời nhắn" value={note} />}
+              <Row
+                label="Phân loại"
+                value={categoryId ? categories.find((c) => c.id === categoryId)?.name ?? "—" : "Không phân loại"}
+              />
             </dl>
             <div className="flex gap-[9px]">
               <button

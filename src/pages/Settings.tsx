@@ -1,7 +1,22 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Phone, MapPin, Check, ShieldAlert, ArrowRight } from "lucide-react";
+import { User, Mail, Phone, MapPin, Check, ShieldAlert, ArrowRight, Laptop, Smartphone as PhoneIcon, LogOut, ShieldCheck } from "lucide-react";
 import { mockUser } from "../lib/mockData.ts";
+
+interface Device {
+  id: string;
+  name: string;
+  type: "desktop" | "mobile";
+  location: string;
+  lastActive: string;
+  current: boolean;
+}
+
+const INITIAL_DEVICES: Device[] = [
+  { id: "d1", name: "Chrome trên Windows", type: "desktop", location: "TP. Hồ Chí Minh, Việt Nam", lastActive: "Đang hoạt động", current: true },
+  { id: "d2", name: "VietBank App - iPhone 15", type: "mobile", location: "TP. Hồ Chí Minh, Việt Nam", lastActive: "2 giờ trước", current: false },
+  { id: "d3", name: "Safari trên MacBook", type: "desktop", location: "Hà Nội, Việt Nam", lastActive: "3 ngày trước", current: false },
+];
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -10,6 +25,11 @@ export default function Settings() {
   const [phone, setPhone] = useState(mockUser.phone);
   const [address, setAddress] = useState(mockUser.address);
   const [saved, setSaved] = useState(false);
+  const [devices, setDevices] = useState<Device[]>(INITIAL_DEVICES);
+
+  function revokeDevice(id: string) {
+    setDevices((prev) => prev.filter((d) => d.id !== id));
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -118,6 +138,58 @@ export default function Settings() {
             )}
           </div>
         </form>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-black/5 p-[15px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] mt-[15px]">
+        <div className="flex items-center gap-[6px] mb-[3px]">
+          <ShieldCheck size={14} className="text-slate-700" />
+          <h2 className="text-[13px] font-semibold text-slate-900 tracking-tight">Thiết bị đăng nhập</h2>
+        </div>
+        <p className="text-[11px] text-slate-500 mb-[12px]">
+          Danh sách thiết bị đang đăng nhập vào tài khoản của bạn. Thu hồi ngay nếu phát hiện thiết bị lạ.
+        </p>
+
+        <ul className="divide-y divide-slate-100">
+          {devices.map((d) => {
+            const Icon = d.type === "desktop" ? Laptop : PhoneIcon;
+            return (
+              <li key={d.id} className="flex items-center gap-[10px] py-[12px]">
+                <span
+                  className={`w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 ${
+                    d.current ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <Icon size={15} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-medium text-slate-900 truncate">
+                    {d.name}
+                    {d.current && (
+                      <span className="ml-[6px] px-[6px] py-[1px] rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-semibold align-middle">
+                        Thiết bị này
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-[2px]">
+                    {d.location} · {d.lastActive}
+                  </p>
+                </div>
+                {!d.current && (
+                  <button
+                    onClick={() => revokeDevice(d.id)}
+                    className="flex items-center gap-[4px] px-[10px] py-[5px] rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 text-[10px] font-medium transition-colors shrink-0"
+                  >
+                    <LogOut size={11} />
+                    Thu hồi
+                  </button>
+                )}
+              </li>
+            );
+          })}
+          {devices.length === 0 && (
+            <li className="py-[16px] text-center text-[11px] text-slate-400">Chỉ còn thiết bị hiện tại đang đăng nhập.</li>
+          )}
+        </ul>
       </div>
     </div>
   );

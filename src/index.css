@@ -102,3 +102,57 @@ body {
   transform-box: fill-box;
   animation: dot-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
+
+@keyframes face-scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
+
+.animate-face-scan {
+  animation: face-scan 2.2s ease-in-out infinite;
+}
+
+@keyframes bell-ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10%,
+  30% {
+    transform: rotate(-12deg);
+  }
+  20%,
+  40% {
+    transform: rotate(12deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 1.6s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes ripple-wave {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple-wave {
+  animation: ripple-wave 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
